@@ -10,6 +10,9 @@ interface EnvVars {
 
   // Stripe
   STRIPE_SECRET_KEY: string;
+  STRIPE_ENDPOINT_SECRET: string;
+  STRIPE_SUCCESS_URL: string;
+  STRIPE_CANCEL_URL: string;
 }
 
 // validate envs with joi schema
@@ -23,6 +26,9 @@ const envsSchema = joi
 
     // Stripe
     STRIPE_SECRET_KEY: joi.string().required(),
+    STRIPE_ENDPOINT_SECRET: joi.string().required(),
+    STRIPE_SUCCESS_URL: joi.string().required(),
+    STRIPE_CANCEL_URL: joi.string().required(),
   })
   .unknown(true); // allow other envs not defined in schema - process.env
 
@@ -45,4 +51,8 @@ export const envs = {
 
   // Stripe
   STRIPE_SECRET_KEY: envsVars.STRIPE_SECRET_KEY,
+  STRIPE_ENDPOINT_SECRET: envsVars.STRIPE_ENDPOINT_SECRET,
+
+  STRIPE_SUCCESS_URL: envsVars.STRIPE_SUCCESS_URL,
+  STRIPE_CANCEL_URL: envsVars.STRIPE_CANCEL_URL,
 };

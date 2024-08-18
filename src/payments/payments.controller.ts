@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 // webhook stripe: express.raw
 import { Request, Response } from 'express';
@@ -10,9 +11,10 @@ import { PaymentsService } from './payments.service';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @Post('create-payment-session')
+  // @Post('create-payment-session')
+  @MessagePattern('create.payment.session')
   createPaymentSession(
-    @Body() createPaymentSessionDto: CreatePaymentSessionDto,
+    @Payload() createPaymentSessionDto: CreatePaymentSessionDto,
   ) {
     return this.paymentsService.createPaymentSession(createPaymentSessionDto);
   }

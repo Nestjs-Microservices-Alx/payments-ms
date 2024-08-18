@@ -1,13 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import Stripe from 'stripe';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { Request, Response } from 'express';
-import { envs } from 'src/config';
+import Stripe from 'stripe';
+
+import { ClientProxy } from '@nestjs/microservices';
+
+import { envs, NATS_SERVICE } from 'src/config';
 import { CreatePaymentSessionDto } from './dto';
 
 @Injectable()
 export class PaymentsService {
   private readonly stripe = new Stripe(envs.STRIPE_SECRET_KEY);
+
+  constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
 
   async createPaymentSession(createPaymentSessionDto: CreatePaymentSessionDto) {
     // all items with the same currency
@@ -44,7 +49,11 @@ export class PaymentsService {
       cancel_url: envs.STRIPE_CANCEL_URL, // redirect after cancel payment (my urls)
     });
 
-    return session;
+    return {
+      cancelUrl: session.cancel_url,
+      successUrl: session.success_url,
+      url: session.url, // stripe payment link
+    };
   }
 
   paymentSuccess() {
@@ -77,16 +86,21 @@ export class PaymentsService {
       // match success payment with our order
       case 'charge.succeeded':
         const chargeSucceeded = event.data.object;
-        console.log(`Event type ${event.type}`);
-        console.log({
-          metadata: chargeSucceeded.metadata,
+        const payload = {
+          stripePaymentId: chargeSucceeded.id,
           orderId: chargeSucceeded.metadata.orderId,
-        });
+          receiptUrl: chargeSucceeded.receipt_url,
+        };
+
+        // publish event: no espera respuesta - orders-ms consume este evento para actualizar el estado de la orden
+        this.client.emit('payment.succeeded', payload);
         break;
       default:
         console.log(`Unhandled event type ${event.type}`, { event });
         return res.status(400).end();
     }
+
+    // TODO: notify customer about the payment (telegram, email, etc)
 
     return res.status(200).json({ received: true, signature });
   }

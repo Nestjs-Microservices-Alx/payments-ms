@@ -1,6 +1,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 import { envs } from './config';
 
@@ -27,6 +28,20 @@ async function bootstrap() {
     }),
   );
 
+  // // Hybrid microservices ------------
+  app.connectMicroservice<MicroserviceOptions>(
+    {
+      transport: Transport.NATS,
+      options: {
+        servers: envs.NATS_SERVERS,
+      },
+    },
+    // to use the same config of the app in microservices (no HTTP based)
+    { inheritAppConfig: true },
+  );
+  await app.startAllMicroservices();
+
+  //
   await app.listen(PORT);
   logger.log(`Payments Microservice is running on port ${PORT}`);
 }
